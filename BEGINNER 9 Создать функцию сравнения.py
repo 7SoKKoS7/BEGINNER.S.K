@@ -6,4 +6,4 @@ def list_two(list1,list2):
 
 list1 = [1, 2, 3, 4, 5]
 list2 = [1, 3, 4]
-print('Результат сравнение и очиски списков = ', list_two(list1,list2))
+print('Результат сравнения и очиски списка = ', list_two(list1,list2))
