@@ -1,0 +1,8 @@
+1. добавьте в таблицу users колонку phone_number (int)
+
+alter table public."Users" add column phone_number integer;
+
+
+2. поменяйте тип данных в таблице users колонка phone_number с int на varchar
+alter table public."Users" 
+alter column phone_number type varchar;
