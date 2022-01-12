@@ -1,0 +1,10 @@
+ Вывести:
+1. всех юзеров,
+select * from public."Users";
+
+2. все продукты,
+select * from public."Products";
+
+3. все статусы заказов
+
+select * from public."Order_status";
