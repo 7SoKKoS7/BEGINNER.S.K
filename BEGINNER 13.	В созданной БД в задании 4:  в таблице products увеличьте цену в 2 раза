@@ -1,0 +1,4 @@
+В созданной БД в задании 4:  в таблице products увеличьте цену в 2 раза
+
+
+update public."Products" set price = price * 2;
