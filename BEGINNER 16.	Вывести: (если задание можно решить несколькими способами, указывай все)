@@ -1,0 +1,20 @@
+Вывести: (если задание можно решить несколькими способами, указывай все)
+1. продукты, цена которых больше 80.00 и меньше или равно 150.00
+
+select * from public."Products" where "price" > '80' and "price" <= '150';
+
+2. заказы совершенные после 01.10.2020 (поле created_at)
+ select * from public."Order" where "created_at" > '01.10.2020' ;
+ 
+3. заказы полученные за первое полугодие 2020 года
+select * from public."Order" where "created_at" >= '01.01.2020' and "created_at" <= '30.06.2020' ;
+
+4. подукты следующих категорий Category 7, Category 11, Category 18
+select * from public."Products" where "category_id" = '7' or "category_id" = '11' or "category_id" = '18';
+
+5. незавершенные заказы по состоянию на 31.12.2020
+select * from public."Order" where "Order_status_order_status_id" = '2' and "created_at" <= '31.12.2020';
+
+6. вывести все корзины, которые были созданы, но заказ так и не был оформлен.
+select carts."cart_id", carts."Users_user_id", carts."subtotal", carts."total", carts."timestamp" 
+from public."carts" inner join public."Order" on ("cart_id" = "Carts_cart_id") and ("Order_status_order_status_id" = '5');
