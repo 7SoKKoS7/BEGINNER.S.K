@@ -1,0 +1,6 @@
+Вывести:
+1. среднюю сумму всех завершенных сделок
+select AVG("total") from public."Order" where "Order_status_order_status_id" = '4';
+
+2. вывести максимальную сумму сделки за 3 квартал 2020
+select max("total") from public."Order" where "created_at" >= '01.07.2020' and "created_at" <= '30.09.2020';
