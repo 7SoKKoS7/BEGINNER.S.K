@@ -24,6 +24,15 @@ limit 10
 
 4. Вывести топ 10 продуктов, которые не только добавляли в корзины, но и оформляли заказы чаще всего.
 
+select products_product_id,count(products_product_id) as topproduct from "Order"
+left join "Cart_product" on cart_id = carts_cart_id
+group by products_product_id
+order by topproduct desc
+limit 10
+
 5. Вывести топ 5 юзеров, которые потратили больше всего денег (total в заказе).
+
+
+
 6. Вывести топ 5 юзеров, которые сделали больше всего заказов (кол-во заказов).
 7. Вывести топ 5 юзеров, которые создали корзины, но так и не сделали заказы.
