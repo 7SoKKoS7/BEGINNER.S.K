@@ -32,7 +32,30 @@ limit 10
 
 5. Вывести топ 5 юзеров, которые потратили больше всего денег (total в заказе).
 
-
+select * from "Users"
+left join "carts" on "User_id" = "Users_user_id" 
+left join "Order" on "cart_id" = "carts_cart_id" 
+where "Order".total is not null
+order by "Order".total desc
+limit 5
 
 6. Вывести топ 5 юзеров, которые сделали больше всего заказов (кол-во заказов).
+
+select "User_id", first_name, count(cart_id) as total_order from "Users"
+left join "carts" on "User_id" = "Users_user_id" 
+left join "Order" on "cart_id" = "carts_cart_id" 
+where "Order".order_id is not null
+group by "User_id"
+order by total_order desc
+limit 5
+
+
 7. Вывести топ 5 юзеров, которые создали корзины, но так и не сделали заказы.
+
+select "Users_user_id", first_name, count(cart_id) as total_cart from "Users"
+left join "carts" on "User_id" = "Users_user_id" 
+left join "Order" on "cart_id" = "carts_cart_id" 
+where "Order".order_id is null
+group by "Users_user_id", first_name
+order by total_cart desc
+limit 5
