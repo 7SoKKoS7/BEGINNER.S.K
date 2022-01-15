@@ -1,7 +1,22 @@
 21.	1. Вывести продукты, которые ни разу не попадали в корзину.
 
+select * from "Products"
+left join "Cart_product" on "Products".product_id = "Cart_product".Products_product_id
+where "Cart_product".Products_product_id is null 
+
 2. Вывести все продукты, которые так и не попали ни в 1 заказ. (но в корзину попасть могли).
+
+select product_title, product_id from "Products"
+left join "Cart_product" on "Products".product_id = "Cart_product".Products_product_id
+left join "Order" on "Order".carts_cart_id = "Cart_product".cart_id 
+where cart_id is not null and order_id is null
+group by "Products".product_title, "Products".product_id
+order by product_id
+
 3. Вывести топ 10 продуктов, которые добавляли в корзины чаще всего.
+
+
+
 4. Вывести топ 10 продуктов, которые не только добавляли в корзины, но и оформляли заказы чаще всего.
 5. Вывести топ 5 юзеров, которые потратили больше всего денег (total в заказе).
 6. Вывести топ 5 юзеров, которые сделали больше всего заказов (кол-во заказов).
