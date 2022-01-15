@@ -1,0 +1,8 @@
+20.
+Вывести наименование группы товаров, общее количество по группе товаров в порядке убывания количества
+
+select category_title, count(product_id) as count_product
+from "Products"
+left join "Categories" on "Categories".category_id = "Products".category_id
+group by category_title
+ORDER by "count_product" desc
