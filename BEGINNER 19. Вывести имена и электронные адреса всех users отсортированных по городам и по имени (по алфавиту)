@@ -1,0 +1,5 @@
+19.
+Вывести имена и электронные адреса всех users отсортированных по городам и по имени (по алфавиту)
+
+select "first_name", "email", "city" from public."Users" 
+order by city, first_name
