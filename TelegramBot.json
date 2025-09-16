@@ -1,0 +1,499 @@
+{
+  "name": "TelegramBot",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message",
+          "callback_query"
+        ],
+        "additionalFields": {
+          "download": false,
+          "userIds": "6291098530"
+        }
+      },
+      "id": "4b728edd-3586-4edf-bb75-1c862163f160",
+      "name": "Telegram Message Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -608,
+        96
+      ],
+      "webhookId": "55acc711-c248-4ac9-b6cd-e295c2d33f4b",
+      "credentials": {
+        "telegramApi": {
+          "id": "gg9kTjcFuE3xXuob",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "const staticData = this.getWorkflowStaticData('global');\nconst defaultModel = 'gpt-5-nano';\nconst labels = {\n  'gpt-5': 'GPT-5',\n  'gpt-5-mini': 'GPT-5 Mini',\n  'gpt-5-nano': 'GPT-5 Nano',\n};\n\nreturn items.map(item => {\n  const data = item.json || {};\n  const normalized = { ...data };\n  let message = data.message;\n  let chatId = message?.chat?.id;\n  let modelChanged = false;\n\n  if (data.callback_query) {\n    const callback = data.callback_query;\n    message = callback.message;\n    chatId = message?.chat?.id;\n    normalized.callbackQueryData = callback.data;\n    if (callback.data) {\n      modelChanged = true;\n      if (chatId !== undefined) {\n        staticData[chatId] = callback.data;\n      }\n    }\n  }\n\n  if (!chatId) {\n    chatId = message?.chat?.id;\n  }\n\n  if (chatId !== undefined && staticData[chatId] === undefined) {\n    staticData[chatId] = defaultModel;\n  }\n\n  const model = (chatId !== undefined && staticData[chatId]) ? staticData[chatId] : defaultModel;\n\n  return {\n    json: {\n      ...normalized,\n      message,\n      chatId: chatId ?? null,\n      model,\n      modelLabel: labels[model] || model,\n      modelChanged,\n    },\n  };\n});"
+      },
+      "id": "a7cc5867-716b-4f63-9f08-c3b6ebd7c82f",
+      "name": "Prepare Update",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [
+        -368,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "model-change",
+              "leftValue": "={{ $json.modelChanged }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "isTrue",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e6f765cf-1b39-48d9-9a1d-c8f6e5d5a09a",
+      "name": "Model Change?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -144,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "voice-condition",
+              "leftValue": "={{ $json.message.voice }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "audio-condition",
+              "leftValue": "={{ $json.message.audio }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        80,
+        96
+      ],
+      "id": "acf2f95d-adc9-40f9-bfa3-eef2c342118c",
+      "name": "Check if Audio file"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.voice?.file_id || $json.message.audio?.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        304,
+        0
+      ],
+      "id": "046bc1e5-24ec-405b-9090-35d402469d80",
+      "name": "Get a file",
+      "webhookId": "e0769871-efe3-49da-81a5-2f88a6fdd33f",
+      "credentials": {
+        "telegramApi": {
+          "id": "gg9kTjcFuE3xXuob",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        528,
+        0
+      ],
+      "id": "28ed47c0-4702-4888-bfbc-5b1ab96a0338",
+      "name": "Transcribe audio",
+      "credentials": {
+        "openAiApi": {
+          "id": "xFVXRoXzxkltJNgI",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "eb912219-2436-4f04-8ffc-c1c20eb07344",
+              "name": "text",
+              "value": "={{ $json.message.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        304,
+        192
+      ],
+      "id": "b78d3180-5b1f-45da-a8a3-af4205bab897",
+      "name": "Set field"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text || ($json.data && $json.data.text) || $json.message.text }}",
+        "options": {
+          "systemMessage": "=# РОЛЬ\n\nТы — AI-агент по имени Ava.\n\nТвоя задача — координировать работу между различными агентами и инструментами, а затем формировать дружелюбный и понятный ответ пользователю.\n\nТы никогда не пишешь письма, не создаёшь контакты, не создаёшь контент, не добавляешь события в календарь и не делаешь резюме самостоятельно. \nТвоя работа — вызывать нужные инструменты и агентов в правильной последовательности.\n\nВсегда думай о порядке действий. Некоторые инструменты сначала требуют вызвать другой инструмент, чтобы получить нужные данные для передачи дальше.\n\n\n# ИНСТРУМЕНТЫ\n\n- Google Search\n\n\n# ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ\n\n- Ты общаешься с пользователем по имени Konstantin.\n- Текущая дата и время: {{ $now.toString() }}\n- Локация: Бёнинген, Нидерланды.\n- Часовой пояс: CET (Europe/Amsterdam).\n- Отвечай на том языке, на котором задан вопрос:\n  - если вопрос на русском — отвечай по-русски,\n  - если вопрос на нидерландском — отвечай по-нидерландски.\n\n\n# ПРАВИЛА\n\n1. Никогда не выполняй задачи вручную — всегда используй подходящий инструмент.\n2. Если требуется уточнение, задавай пользователю уточняющий вопрос.\n3. При поиске в интернете формируй короткие и точные запросы.\n4. Будь дружелюбным и вежливым в ответах.\n5. Если вопрос выходит за рамки инструментов, отвечай как умный собеседник: помогай с фактами, идеями, советами.\n6. Добавляй полезные детали, которые могут быть интересны пользователю (новости, погода, тренды), если это уместно.\n"
+        }
+      },
+      "id": "0f315e84-5f5e-4fb1-bed8-e78808f2d9f5",
+      "name": "Assistant Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        752,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "model": "={{ $('Prepare Update').item.json.model || 'gpt-5-nano' }}",
+        "options": {}
+      },
+      "id": "56a466c9-793c-4736-a09c-201ed39d483f",
+      "name": "Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        528,
+        384
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "xFVXRoXzxkltJNgI",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Prepare Update').item.json.chatId }}",
+        "contextWindowLength": 10
+      },
+      "id": "ae110820-ee23-4b33-9def-e8678c8ae84f",
+      "name": "Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        528,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "87b26973-15c9-43d0-8a4c-6b0ca4b9b983",
+              "name": "output",
+              "value": "={{ '✅ Модель переключена на ' + $('Prepare Update').item.json.modelLabel + '. Отправьте сообщение.' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        96,
+        -96
+      ],
+      "id": "c0ba026f-b3eb-48b2-bf82-5f0cfbfffbf8",
+      "name": "Model Updated Message"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Prepare Update').item.json.chatId }}",
+        "text": "={{ $json.output }}",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "={{ $('Prepare Update').item.json.model === 'gpt-5' ? 'GPT-5 ✅' : 'GPT-5' }}",
+                    "additionalFields": {
+                      "callback_data": "gpt-5"
+                    }
+                  },
+                  {
+                    "text": "={{ $('Prepare Update').item.json.model === 'gpt-5-mini' ? 'GPT-mini ✅' : 'GPT-mini' }}",
+                    "additionalFields": {
+                      "callback_data": "gpt-5-mini"
+                    }
+                  },
+                  {
+                    "text": "={{ $('Prepare Update').item.json.model === 'gpt-5-nano' ? 'GPT-nano ✅' : 'GPT-nano' }}",
+                    "additionalFields": {
+                      "callback_data": "gpt-5-nano"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1008,
+        96
+      ],
+      "id": "3133ab2a-6fcd-4227-a135-3f9558647f0d",
+      "name": "Reply in Telegram",
+      "webhookId": "b96b7a41-9806-455f-b72e-00aa638eda71",
+      "credentials": {
+        "telegramApi": {
+          "id": "gg9kTjcFuE3xXuob",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "gl": "nl",
+          "device": "desktop",
+          "no_cache": false,
+          "google_domain": "google.com",
+          "hl": "nl"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolSerpApi",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        384
+      ],
+      "id": "441e7322-8534-425f-abaf-63d4e01a1fb1",
+      "name": "Google Search",
+      "credentials": {
+        "serpApi": {
+          "id": "qZbZv77Clxbhdatj",
+          "name": "SerpAPI account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Message Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Update": {
+      "main": [
+        [
+          {
+            "node": "Model Change?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Model Change?": {
+      "main": [
+        [
+          {
+            "node": "Model Updated Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check if Audio file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Audio file": {
+      "main": [
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set field",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Transcribe audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe audio": {
+      "main": [
+        [
+          {
+            "node": "Assistant Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set field": {
+      "main": [
+        [
+          {
+            "node": "Assistant Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Assistant Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Assistant Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assistant Agent": {
+      "main": [
+        [
+          {
+            "node": "Reply in Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Model Updated Message": {
+      "main": [
+        [
+          {
+            "node": "Reply in Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Search": {
+      "ai_tool": [
+        [
+          {
+            "node": "Assistant Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6ce9538a-d5b0-4d66-951f-9d9e4c25863b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cbcdbe900921b2482860818f3c4684b647fa895db629840c91a2160cfc9c9ff0"
+  },
+  "id": "Aga3B8C6htZiy6xG",
+  "tags": []
+}
